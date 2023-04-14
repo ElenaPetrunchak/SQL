@@ -104,18 +104,85 @@ from trip
 group by city 
 order by city;
 
+---14)Добавить из таблицы supply в таблицу book, все книги, кроме книг, написанных Булгаковым М.А. и Достоевским Ф.М.
+
+insert into book (title, author, price, amount)
+SELECT title, author, price, amount 
+FROM supply
+Where author not in('Булгаков М.А.','Достоевский Ф.М.');
+
+SELECT * FROM book;
+
+---15)Занести из таблицы supply в таблицу book только те книги, авторов которых нет в  book.
+
+INSERT INTO book (title, author, price, amount) 
+SELECT title, author, price, amount 
+FROM supply
+where author not in (
+    select author
+    from book);
+    
+SELECT * FROM book;
+
+---16)Вывести два города, в которых чаще всего были в командировках сотрудники. Вычисляемый столбец назвать Количество.
+
+select city, count(city) as Количество
+from trip
+group by city
+order by count(city) DESC
+limit 2;
+
+---17)Вывести информацию о командировках во все города кроме Москвы и Санкт-Петербурга (фамилии и инициалы сотрудников, город ,  длительность командировки в днях, при этом первый и последний день относится к периоду командировки). 
+---Последний столбец назвать Длительность. Информацию вывести в упорядоченном по убыванию длительности поездки
+
+select name, city, DATEDIFF(date_last,date_first)+1 as Длительность
+from trip
+where city not in('Москва','Санкт-Петербург')
+order by Длительность desc;
+
+---18)Вывести информацию о командировках сотрудника(ов), которые были самыми короткими по времени. 
+---В результат включить столбцы name, city, date_first, date_last.
+
+select name, city, date_first, date_last
+from trip
+where DATEDIFF(date_last,date_first) = 
+    (select(min(DATEDIFF(date_last,date_first)))
+    from trip);  
+
+---19)Вывести информацию о командировках, начало и конец которых относятся к одному месяцу (год может быть любой). В результат включить столбцы name, city, date_first, date_last. 
+---Строки отсортировать сначала  в алфавитном порядке по названию города, а затем по фамилии сотрудника.
+   
+select name, city, date_first, date_last
+from trip
+where month(date_first) = month(date_last)
+order by city, name;
 
 
+---20)Вывести название месяца и количество командировок для каждого месяца. Считаем, что командировка относится к некоторому месяцу, если она началась в этом месяце.
+--- Информацию вывести сначала в отсортированном по убыванию количества, а потом в алфавитном порядке по названию месяца виде. Название столбцов – Месяц и Количество.
+
+select monthname(date_first) as Месяц, count(monthname(date_first)) as Количество
+from trip
+group by monthname(date_first)
+order by Количество DESC, Месяц;
 
 
+---21)Вывести сумму суточных (произведение количества дней командировки и размера суточных) для командировок, первый день которых пришелся на февраль или март 2020 года. Значение суточных для каждой командировки занесено в столбец per_diem.
+---Вывести фамилию и инициалы сотрудника, город, первый день командировки и сумму суточных. Последний столбец назвать Сумма. Информацию отсортировать сначала  в алфавитном порядке по фамилиям сотрудников, а затем по убыванию суммы суточных.
 
+select name, city, date_first, (DATEDIFF(date_last,date_first)+1)*per_diem as Сумма
+from trip
+where month(date_first) = 3 OR month(date_first) = 2 and year(date_first) = 2020
+order by name, Сумма desc;
 
+---22)Вывести фамилию с инициалами и общую сумму суточных, полученных за все командировки для тех сотрудников, которые были в командировках больше чем 3 раза, в отсортированном по убыванию сумм суточных виде. Последний столбец назвать Сумма.
 
-
-
-
-
-
-
-
-
+select name, sum((datediff(date_last, date_first)+1)*per_diem) as Сумма
+from trip
+where name in(
+    select name
+    from trip
+    group by name 
+    HAVING count(name) > 3)
+group by name
+order by сумма DESC;  
